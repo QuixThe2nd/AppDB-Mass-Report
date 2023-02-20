@@ -17,25 +17,23 @@ def check_link(id, rt, i, type):
     try:
         code = requests.head(link).status_code
     except:
-        report_link(id, 'Website offline', link, i, type)
+        # report_link(id, 'Website offline', link, i, type)
         return
 
-    if code > 399:
+    if code > 399 and code < 500:
         report_link(id, 'HTTP ' + str(code), link, i, type)
         return
 
     try:
         content = requests.get(link).text
-        if 'WILLKOMMEN IM UNTERGRUND!' in content or 'File Not Found' in content:
-            report_link(id, 'File not found', link, i, type)
-        elif 'The file you are trying to download is no longer available' in content:
-            report_link(id, 'File no longer available', link, i, type)
-        elif 'File has expired' in content:
-            report_link(id, 'File has expired', link, i, type)
-        else:
-            if 'bayfiles.com' in link or 'github.com' in link or 'unc0ver.dev' in link or 'userscloud.com' in link:
+        for check in ['WILLKOMMEN IM UNTERGRUND!', 'File Not Found', 'File not found', 'File was not found', 'This document was not found in the system', 'Ничего не найдено', 'The file you are trying to download is no longer available', 'File has expired', 'File was deleted', 'file does not exist', 'Related Searches']:
+            if check in content:
+                report_link(id, check, link, i, type)
                 return
-            print('Unknown Status: ' + link)
+        # Valid Links
+        if 'bayfiles' in link or 'github.com' in link or 'unc0ver.dev' in link or 'userscloud' in link or 'turbobit' in link or 'sendspace' in link:
+            return
+        print('Unknown Status: ' + link)
     except:
         print('Failed to check status')
 
@@ -51,9 +49,7 @@ def call_check_app(app, i, type):
 
 def check_app(app, i, type):
     trackid = app['trackid']
-    print('Name: ' + app['name'])
     link_data = requests.get(f'https://api.dbservices.to/v1.5/?action=get_links&type={type}&trackids={trackid}').json()
-
     if link_data['data'] is None:
         return
 
@@ -68,6 +64,8 @@ def check_app(app, i, type):
 
         for links in final_app:
             for link in links:
+                if len(link['reports']) > 0:
+                    continue
                 if link['host'] is not None and (link['host'] == 'mega.nz' or 'starfiles' in link['host'] or '.onion' in link['host']):
                     continue
 
@@ -76,9 +74,10 @@ def check_app(app, i, type):
                     call_check_link(link['id'], response.json()['data']['redirection_ticket'], i, type)
                 except:
                     print('Request Failed')
+                time.sleep(1)
 
 
-for type in ["books", "osx", "standalone", "cydia", "ios", "tvos"]:
+for type in ["books", "tvos", "osx", "standalone", "cydia", "ios"]:
     print(f'Type: {type}')
     page = 0
     i = 0
