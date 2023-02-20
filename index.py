@@ -58,7 +58,7 @@ def check_app(app, i, type):
         for ver, links in v.items():
             for link in links:
 
-                if link['host'] == 'mega.nz' or 'starfiles' not in link['host'] or link['host'] == 'ipah3djxlaro6o2h4lm3qwctcl42shj52q2ybvhiezratxndkeg7ozad.onion':
+                if link['host'] == 'mega.nz' or 'starfiles' not in link['host'] or '.onion' in link['host']:
                     continue
 
                 response = requests.get('https://api.dbservices.to/v1.5/?action=process_redirect&t=' + link['link'].replace('ticket://', ''))
