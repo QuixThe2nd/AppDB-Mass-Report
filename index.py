@@ -3,15 +3,15 @@ from requests import get, head
 from threading import Thread
 
 lt = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+hosts = []
 
 
-def call_check_link(id, rt, i, type):
-    download_thread = Thread(target=check_link, args=(id, rt, i, type))
-    download_thread.start()
+def call_check_link(id, rt, i, type, host):
+    thread = Thread(target=check_link, args=(id, rt, i, type, host))
+    thread.start()
 
 
-def check_link(id, rt, i, type):
-    sleep(10)
+def check_link(id, rt, i, type, host):
     link = get(f'https://api.dbservices.to/v1.5/?action=process_redirect&rt={rt}').json()['data']['link']
 
     try:
@@ -21,38 +21,52 @@ def check_link(id, rt, i, type):
         return
 
     if code > 399 and code < 500:
+        if code == 403 and 'mediafire' not in link:
+            return
         report_link(id, f'HTTP {code}', link, i, type)
         return
 
     try:
         content = get(link).text
-        for check in ['WILLKOMMEN IM UNTERGRUND!', 'File Not Found', 'File not found', 'File was not found', 'This document was not found in the system', 'Ничего не найдено', 'The file you are trying to download is no longer available', 'File has expired', 'File was deleted', 'file does not exist', 'Related Searches']:
-            if check in content:
+        for check in ['File not available', 'Your potential download link is INVALID', 'WILLKOMMEN IM UNTERGRUND!', 'This file does not exist', 'File Not Found', 'File not found', 'File was not found', 'This document was not found in the system', 'Ничего не найдено', 'The file you are trying to download is no longer available', 'File has expired', 'File was deleted', 'file does not exist', 'Related Searches', 'Invalid Download Link', 'File has been removed', 'The file was removed by administrator', ' THE FILE YOU WERE LOOKING FOR DOESN\'T EXIST.', 'Can\'t find file. Please check URL.', 'File does not exist', 'The file you are trying to access is no longer available publicly.', 'The file you are looking for does not exist!', 'We\'re having a terrible day', 'Download Error', 'There are no files', 'Invalid SSL certificate', 'THE FILE YOU WERE LOOKING FOR DOESN\'T EXIST', 'Page not found']:
+            if check in content and 'dailyuploads.net' not in link:
+                if 'userscloud.com' in link and check == 'File not found':
+                    continue
                 report_link(id, check, link, i, type)
                 return
-        # Valid Links
-        # if 'bayfiles' in link or 'github.com' in link or 'unc0ver.dev' in link or 'userscloud' in link or 'turbobit' in link or 'sendspace' in link:
-        #     return
-        if any(valid in link for valid in ['bayfiles', 'github.com', 'unc0ver.dev', 'userscloud', 'turbobit', 'sendspace']):
+        # Dead Sites
+        if any(host in link for host in ['dailyuploads.cc', 'filewinds', 'siri-on', 'mirrorupload', 'uploadhero', 'filedwon', 'easports', 'hugefiles', 'yfile.co', 'filefactory', 'filesquick', 'share-online', 'fiberupload', 'files2upload', 'uploadlw', '24uploading', 'datafilehost', 'filecloud', 'gg.gg', 'letitbit', 'megaload', 'mediafree', 'up09', 'uploadable', 'sinhro', 'nornar', 'limelinx', 'themediastorage', 'dix3', 'minihost', 'ul.to', 'media1fire', 'ifile', 'd-h.st', 'openload', 'bytejunk', 'cyberlocker', 'kingfiles', 'putlocker', 'filepup', 'megashares', 'fastsonic', 'uploadship', 'oboom', 'copy', 'multiupload', 'fileom', 'xunlei', 'filetug', 'dld.to', 'joycloud', 'dfiles.ru', 'lumfile', 'fatfiles', 'fileshack', 'filebox', 'iosandroiddl', 'filemonkey', 'eazyfiles', 'Sendspace', 'Supershare', 'sendspace', 'junocloud', 'FilePup', 'lemuploads', 'hulkload', 'sendit', 'linkbucks', 'filenuke', '180upload', 'fileserve', 'datafile', 'shareflare', 'project-free-upload', 'lazytool', '91rb', 'hipfile', 'queenshare', 'fileflyer', 'filescdn', 'openload', 'fileaddict', 'filepup', 'filedais', 'filescdn', 'chayfile', 'cloudshares', 'filedrivex', 'bitshare', 'uploaded', 'bleencraxx', 'hotfile', 'uploadocean', 'filevice']):
+            report_link(id, 'Website down', link, i, type)
             return
-        print(f'Unknown Status: {link}')
+        if 'bit.ly' in link:
+            report_link(id, 'Link shortener', link, i, type)
+            return
+
+        if 'itunes.apple.com' in link:
+            report_link(id, 'Itunes Link', link, i, type)
+            return
+        # print(f'Unknown Status: {link}')
+
+        if host not in hosts:
+            hosts.append(host)
+            print(link)
     except:
         print('Failed to check status')
 
 
 def report_link(link, reason, url, i, type):
-    # print(type + ' ' + str(i) + ': ' + reason + ': ' + get(f'https://api.dbservices.to/v1.5/?action=report&type={type}&id={link}&reason={reason}&lt={lt}').text + ' - ' + url)
+    reason = reason + ' . AppDB Link Reporter . Contact Quix 3parsa3 (at) gmail.com if this is incorrect'
     print(f"{type} {i}: {reason}: {get(f'https://api.dbservices.to/v1.5/?action=report&type={type}&id={link}&reason={reason}&lt={lt}').text} - {url}")
 
 
 def call_check_app(app, i, type):
-    download_thread = Thread(target=check_app, args=(app, i, type))
-    download_thread.start()
+    thread = Thread(target=check_app, args=(app, i, type))
+    thread.start()
 
 
 def check_app(app, i, type):
     trackid = app['trackid']
-    link_data = get(f'https://api.dbservices.to/v1.5/?action=get_links&type={type}&trackids={trackid}').json()
+    link_data = get(f'https://api.dbservices.to/v1.5/?action=get_links&type={type}&trackids={trackid}&lt={lt}').json()
     if link_data['data'] is None:
         return
 
@@ -73,15 +87,17 @@ def check_app(app, i, type):
                 if link['host'] is not None and (link['host'] == 'mega.nz' or any(so in link['host'] for so in ['starfiles', '.onion'])):
                     continue
 
+                if link['link'] == '@':
+                    continue
+                response = get('https://api.dbservices.to/v1.5/?action=process_redirect&t=' + link['link'].replace('ticket://', ''))
                 try:
-                    response = get(f'https://api.dbservices.to/v1.5/?action=process_redirect&t={link["link"].replace("ticket://", "")}')
-                    call_check_link(link['id'], response.json()['data']['redirection_ticket'], i, type)
+                    call_check_link(link['id'], response.json()['data']['redirection_ticket'], i, type, link['host'])
                 except:
-                    print('Request Failed')
+                    print('RT failed')
                 sleep(1)
 
 
-for type in ["books", "tvos", "osx", "standalone", "cydia", "ios"]:
+for type in ["ios", "cydia", "books", "tvos", "osx", "standalone"]:
     print(f'Type: {type}')
     page = 0
     i = 0
